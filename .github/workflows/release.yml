@@ -8,6 +8,8 @@ jobs:
   run_tests:
     uses: ./.github/workflows/ci.yml
     secrets: inherit
+    permissions:
+      contents: read
 
   release:
     needs: run_tests
@@ -28,9 +30,24 @@ jobs:
       id: release
       uses: python-semantic-release/python-semantic-release@350c48fcb3ffcdfd2e0a235206bc2ecea6b69df0 # v10.5.3
       with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
         git_committer_name: "github-actions"
         git_committer_email: "github-actions@github.com"
         changelog: "false"
+        vcs_release: "false"
+    - name: Create GitHub Release with Assets
+      if: steps.release.outputs.released == 'true'
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        RELEASE_NOTES: ${{ steps.release.outputs.release_notes }}
+        TAG: ${{ steps.release.outputs.tag }}
+      run: |
+        printf '%s' "$RELEASE_NOTES" > "$RUNNER_TEMP/release_notes.md"
+        gh release create "$TAG" \
+          --verify-tag \
+          --title "$TAG" \
+          --notes-file "$RUNNER_TEMP/release_notes.md" \
+          dist/*
     - name: Upload dist
       if: steps.release.outputs.released == 'true'
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -40,6 +57,7 @@ jobs:
     outputs:
       released: ${{ steps.release.outputs.released }}
       version: ${{ steps.release.outputs.version }}
+      release_notes: ${{ steps.release.outputs.release_notes }}
 
   publish_to_pypi:
     needs: release

@@ -2,6 +2,9 @@ name: Python CI
 
 on:
   workflow_call:
+  push:
+    branches:
+      - master
   pull_request:
     branches:
       - '**'
@@ -10,6 +13,8 @@ jobs:
   run_tests:
     name: ${{ matrix.toxenv }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:

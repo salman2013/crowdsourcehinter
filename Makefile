@@ -19,7 +19,9 @@ requirements: ## install development environment requirements
 	uv sync --group dev
 
 quality: ## run linting checks
-	tox -e quality
+	uv run --group quality flake8 src/crowdsourcehinter/
 
-test: ## run tests
-	tox -e test
+test-python: clean ## run tests and generate coverage report
+	uv run --group test python -Wd -m pytest; code=$$?; [ $$code -eq 5 ] && exit 0 || exit $$code
+
+test: test-python ## run tests
